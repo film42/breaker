@@ -9,11 +9,9 @@ module Breaker
       MINIMUM_FRAME_SIZE_IN_SECONDS = (MINIMUM_FRAME_SIZE_IN_MILLISECONDS / 1000.0)
 
       def initialize(options = {})
-        @current_frame = new_frame
-        @frames = [current_frame]
-        @totals = { :successes => 0, :failures => 0 }
-        @next_frame_at = ::Time.now + MINIMUM_FRAME_SIZE_IN_SECONDS
         @window_size_in_milliseconds = options.fetch(:window_size_in_milliseconds)
+
+        reset
       end
 
       def data_point_count
@@ -55,6 +53,13 @@ module Breaker
 
       def percent_success
         1.0 - percent_error
+      end
+
+      def reset
+        @next_frame_at = ::Time.now + MINIMUM_FRAME_SIZE_IN_SECONDS
+        @current_frame = new_frame
+        @frames = [current_frame]
+        @totals = { :successes => 0, :failures => 0 }
       end
 
     private

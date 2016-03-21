@@ -127,4 +127,14 @@ describe ::Breaker::Sampler::SlidingWindowSampler do
       expect(subject.percent_success).to eq(0.75)
     end
   end
+
+  describe "#reset" do
+    it "clears all frames and totals" do
+      subject.increment_success
+      subject.increment_success
+      expect(subject.data_point_count).to eq(2)
+      subject.reset
+      expect(subject.data_point_count).to eq(0)
+    end
+  end
 end
