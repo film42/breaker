@@ -9,6 +9,7 @@ module Breaker
       MINIMUM_FRAME_SIZE_IN_SECONDS = (MINIMUM_FRAME_SIZE_IN_MILLISECONDS / 1000.0)
 
       def initialize(options = {})
+        @mutex = ::Mutex.new
         @window_size_in_milliseconds = options.fetch(:window_size_in_milliseconds)
 
         reset
@@ -22,15 +23,17 @@ module Breaker
       # Types: :success, :failure
       #
       def increment(type)
-        prune_frames
+        mutex.synchronize do
+          prune_frames
 
-        case type
-        when :success
-          current_frame[:successes] += 1
-          totals[:successes] += 1
-        when :failure
-          current_frame[:failures] += 1
-          totals[:failures] += 1
+          case type
+          when :success
+            current_frame[:successes] += 1
+            totals[:successes] += 1
+          when :failure
+            current_frame[:failures] += 1
+            totals[:failures] += 1
+          end
         end
       end
 
@@ -56,13 +59,17 @@ module Breaker
       end
 
       def reset
-        @next_frame_at = ::Time.now + MINIMUM_FRAME_SIZE_IN_SECONDS
-        @current_frame = new_frame
-        @frames = [current_frame]
-        @totals = { :successes => 0, :failures => 0 }
+        mutex.synchronize do
+          @next_frame_at = ::Time.now + MINIMUM_FRAME_SIZE_IN_SECONDS
+          @current_frame = new_frame
+          @frames = [current_frame]
+          @totals = { :successes => 0, :failures => 0 }
+        end
       end
 
     private
+
+      attr_reader :mutex
 
       def new_frame
         {
