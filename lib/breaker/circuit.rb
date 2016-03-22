@@ -2,7 +2,7 @@ require "concurrent"
 
 module Breaker
   class Circuit
-    attr_reader :sampler, :state, :error_threshold_percentage
+    attr_reader :error_threshold_percentage, :minimum_sample_size, :sampler, :state
 
     REGISTRY = {}
 
@@ -16,6 +16,8 @@ module Breaker
 
     def initialize(options)
       @error_threshold_percentage = options.fetch(:error_threshold_percentage, ::Breaker.config.error_threshold_percentage)
+      @minimum_sample_size = options.fetch(:minimum_sample_size, ::Breaker.config.minimum_sample_size)
+
       @sampler = ::Breaker::Sampler::SlidingWindowSampler.new
       @state = :closed
     end
@@ -52,7 +54,9 @@ module Breaker
       thread_pool.shutdown
       thread_pool.kill
 
-      has_failed = future.completed?
+      # There are some helper methods, but rejected, pending,
+      # processing, etc. are all failure states at this point.
+      has_failed = !future.realized?
       if has_failed
         sampler.increment_failure
       else
@@ -76,7 +80,8 @@ module Breaker
       case state
       when :closed
         # Change state to open if we're over the max error rate.
-        if sampler.percent_error > error_threshold_percentage
+        if sampler.percent_error > error_threshold_percentage &&
+            sampler.data_point_count >= minimum_sample_size
           @state = :open
           @circuit_timeout = next_circuit_timeout
         end
