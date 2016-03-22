@@ -7,13 +7,13 @@ describe ::Breaker::Sampler::SlidingWindowSampler do
     allow(::Time).to receive(:now).and_return(::Time.now + seconds)
   end
 
-  subject { described_class.new(:window_size_in_milliseconds => window_size_in_milliseconds) }
+  subject { described_class.new(:rolling_statistical_windown_in_milliseconds => rolling_statistical_windown_in_milliseconds) }
 
-  let(:window_size_in_milliseconds) { 1_000 }
+  let(:rolling_statistical_windown_in_milliseconds) { 1_000 }
 
   describe ".new" do
     it "sets the window size in ms" do
-      expect(subject.window_size_in_milliseconds).to eq(window_size_in_milliseconds)
+      expect(subject.rolling_statistical_windown_in_milliseconds).to eq(rolling_statistical_windown_in_milliseconds)
     end
 
     it "sets the current frame" do

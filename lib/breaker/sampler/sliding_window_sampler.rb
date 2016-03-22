@@ -3,14 +3,14 @@ require "time"
 module Breaker
   module Sampler
     class SlidingWindowSampler
-      attr_reader :window_size_in_milliseconds, :current_frame, :frames, :next_frame_at, :totals
+      attr_reader :rolling_statistical_windown_in_milliseconds, :current_frame, :frames, :next_frame_at, :totals
 
       MINIMUM_FRAME_SIZE_IN_MILLISECONDS = 100
       MINIMUM_FRAME_SIZE_IN_SECONDS = (MINIMUM_FRAME_SIZE_IN_MILLISECONDS / 1000.0)
 
       def initialize(options = {})
         @mutex = ::Mutex.new
-        @window_size_in_milliseconds = options.fetch(:window_size_in_milliseconds)
+        @rolling_statistical_windown_in_milliseconds = options.fetch(:rolling_statistical_windown_in_milliseconds, ::Breaker.config.rolling_statistical_windown_in_milliseconds)
 
         reset
       end
@@ -109,7 +109,7 @@ module Breaker
       end
 
       def window_size_in_seconds
-        window_size_in_milliseconds / 1000.0
+        rolling_statistical_windown_in_milliseconds / 1000.0
       end
     end
   end
